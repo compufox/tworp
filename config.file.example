@@ -7,3 +7,7 @@ twitter-user = example_user
 # how long to wait before trying to get new tweets
 # DEFAULT = 5
 interval = 10
+
+## Unneeded if you are using a release from github
+# twitter-api-key = blablablahYourKey
+# twitter-api-secret = blahblahblahYourSecret

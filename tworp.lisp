@@ -68,11 +68,16 @@
         (opts:missing-required-option (con)
           (format t "fatal: ~a~%" con)
           (opts:exit 1)))
+    (declare (ignorable free-args))
 
     (when-option (options :help)
       (unix-opts:describe :prefix "repost tweets from twitter to mastodon"
                           :usage-of "tworp"))
 
+    #-tworp-build
+    (setf chirp:*oauth-api-key* (conf:config :twitter-api-key)
+          chirp:*oauth-api-secret* (conf:config :twitter-api-secret))
+    
     (handler-case
         (with-user-abort
              (glacier:run-bot ((make-instance 'glacier:mastodon-bot :config-file
@@ -81,4 +86,6 @@
                (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t)
                  (mapcar #'post-to-mastodon (new-tweets)))))
       (user-abort ()
-        (unix-opts:exit 0)))))
+        (unix-opts:exit 0))
+      (error (e)
+        (format t "encountered uncrecoverable error: ~A~%" e)))))
