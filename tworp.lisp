@@ -31,7 +31,14 @@
 (defun new-tweets ()
   (let ((tweets (chirp:statuses/user-timeline :screen-name (conf:config :twitter-user) :since-id *last-id*)))
     (setf *last-id* (chirp:id (first tweets)))
+    (write-last-id)
     tweets))
+
+(defun write-last-id ()
+  (with-open-file (out "last.id" :direction :output
+                                 :if-does-not-exist :create
+                                 :if-does-exist :superscede)
+    (princ *last-id* out)))
 
 (defun post-to-mastodon (tweet)
   (glacier:post (chirp:full-text tweet)
@@ -56,6 +63,10 @@
       filename)))
 
 (defun main ()
+  (when (uiop:file-exists-p "last.id")
+    (with-open-file (in "last.id")
+      (setf *last-id* (read-line in))))
+      
   (multiple-value-bind (options free-args)
       (handler-case (opts:get-opts)
         (opts:missing-arg (condition)
@@ -74,7 +85,8 @@
 
     (when-option (options :help)
       (unix-opts:describe :prefix "repost tweets from twitter to mastodon"
-                          :usage-of "tworp"))
+                          :usage-of "tworp")
+      (opts:exit 0))
 
     #-tworp-build
     (setf chirp:*oauth-api-key* (conf:config :twitter-api-key)
