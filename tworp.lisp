@@ -35,6 +35,8 @@
 
 (defun post-to-mastodon (tweet)
   (glacier:post (chirp:full-text tweet)
+                :cw (conf:config :content-warning)
+                :visibility (conf:config :visibility :unlisted)
                 :media (mapcar #'download-tweet-media
                                (cdr (assoc :media (chirp:entities tweet))))))
 

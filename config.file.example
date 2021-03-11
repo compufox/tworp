@@ -8,6 +8,14 @@ twitter-user = example_user
 # DEFAULT = 5
 interval = 10
 
+# a content warning to put on all mastodon posts
+content-warning = twitter crosspost
+
+# the visibility that the mastodon bot will post at
+# VALUES  = :public :unlisted :private :direct
+# DEFAULT = :unlisted
+visibility = :unlisted
+
 ## Unneeded if you are using a release from github
 # twitter-api-key = blablablahYourKey
 # twitter-api-secret = blahblahblahYourSecret
