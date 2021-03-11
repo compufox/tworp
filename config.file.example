@@ -5,6 +5,7 @@ mastodon-token = blahblahblah
 twitter-user = example_user
 
 # how long to wait before trying to get new tweets
+# (in minutes)
 # DEFAULT = 5
 interval = 10
 
