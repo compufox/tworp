@@ -9,6 +9,7 @@ twitter-user = example_user
 interval = 10
 
 # a content warning to put on all mastodon posts
+# DEFAULT = twitter crosspost
 content-warning = twitter crosspost
 
 # the visibility that the mastodon bot will post at
