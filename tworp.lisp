@@ -46,7 +46,7 @@
     (glacier:post (ppcre:regex-replace-all "@(\\w*)" (chirp:text tweet) "@\\1@twitter.com")
                   :cw (conf:config :content-warning "twitter crosspost")
                   :visibility (conf:config :visibility :unlisted)
-                  :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet)))))))d
+                  :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet)))))))
 
 (defun download-tweet-media (media)
   (when media
