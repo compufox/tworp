@@ -92,7 +92,7 @@
         (with-user-abort
              (glacier:run-bot ((make-instance 'glacier:mastodon-bot :config-file
                                               (getf options :config-file))
-                               :with-websocket nil :restart-on-close nil)
+                               :with-websocket nil)
                (unless (or chirp:*oauth-api-key* chirp:*oauth-api-secret*)
                  (setf chirp:*oauth-api-key* (conf:config :twitter-api-key)
                        chirp:*oauth-api-secret* (conf:config :twitter-api-secret)))
