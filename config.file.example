@@ -1,0 +1,9 @@
+mastodon-instance = newsbot.eu
+mastodon-token = blahblahblah
+
+# the handle of the twitter user to crosspost
+twitter-user = example_user
+
+# how long to wait before trying to get new tweets
+# DEFAULT = 5
+interval = 10
