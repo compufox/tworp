@@ -30,37 +30,37 @@
 
 (defun new-tweets ()
   (let ((tweets (chirp:statuses/user-timeline :screen-name (conf:config :twitter-user) :since-id *last-id*)))
-    (setf *last-id* (chirp:id (first tweets)))
-    (write-last-id)
+    (when tweets
+      (setf *last-id* (chirp:id (first tweets)))
+      (write-last-id))
     tweets))
 
 (defun write-last-id ()
   (with-open-file (out "last.id" :direction :output
                                  :if-does-not-exist :create
-                                 :if-does-exist :superscede)
+                                 :if-exists :supersede)
     (princ *last-id* out)))
 
 (defun post-to-mastodon (tweet)
-  (glacier:post (chirp:full-text tweet)
-                :cw (conf:config :content-warning)
-                :visibility (conf:config :visibility :unlisted)
-                :media (mapcar #'download-tweet-media
-                               (cdr (assoc :media (chirp:entities tweet))))))
+  (when tweet
+    (glacier:post (chirp:text tweet)
+                  :cw (conf:config :content-warning)
+                  :visibility (conf:config :visibility :unlisted)
+                  :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet)))))))
 
 (defun download-tweet-media (media)
   (when media
-    (ensure-directories-exist #P"./media")
     (let* ((url (chirp:media-url-https media))
-           (filename (concatenate 'string "./media/" (pathname-name url) "." (pathname-type url))))
+           (filename (concatenate 'string "media/" (pathname-name url) "." (pathname-type url))))
       (with-open-file (out filename :direction :output
                                     :if-does-not-exist :create
-                                    :if-does-exist :supersede
+                                    :if-exists :supersede
                                     :element-type '(unsigned-byte 8))
         (loop :with input := (drakma:http-request (chirp:media-url-https media) :want-stream t)
               :for byte := (read-byte input nil nil)
               :while byte
               :do (write-byte byte out)))
-      filename)))
+      (merge-pathnames filename (uiop:getcwd)))))
 
 (defun main ()
   (when (uiop:file-exists-p "last.id")
@@ -87,16 +87,16 @@
       (unix-opts:describe :prefix "repost tweets from twitter to mastodon"
                           :usage-of "tworp")
       (opts:exit 0))
-
-    #-tworp-build
-    (setf chirp:*oauth-api-key* (conf:config :twitter-api-key)
-          chirp:*oauth-api-secret* (conf:config :twitter-api-secret))
     
     (handler-case
         (with-user-abort
              (glacier:run-bot ((make-instance 'glacier:mastodon-bot :config-file
                                               (getf options :config-file))
                                :with-websocket nil :restart-on-close nil)
+               (unless (or chirp:*oauth-api-key* chirp:*oauth-api-secret*)
+                 (setf chirp:*oauth-api-key* (conf:config :twitter-api-key)
+                       chirp:*oauth-api-secret* (conf:config :twitter-api-secret)))
+               (ensure-directories-exist #P"./media/")
                (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t)
                  (mapcar #'post-to-mastodon (new-tweets)))))
       (user-abort ()
