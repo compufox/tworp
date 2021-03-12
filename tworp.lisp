@@ -10,7 +10,7 @@
 
 (defvar *last-id* nil)
 
-(unix-opts:define-opts
+(opts:define-opts
   (:name :help
    :description "print this help text"
    :short #\h
@@ -20,7 +20,10 @@
    :short #\c
    :long "config"
    :arg-parser #'identity
-   :meta-var "FILE"))
+   :meta-var "FILE")
+  (:name :version
+   :description "prints the application version"
+   :long "version"))
 
 (defmacro when-option ((options opt) &body body)
   `(let ((it (getf ,options ,opt)))
@@ -70,22 +73,30 @@
   (multiple-value-bind (options free-args)
       (handler-case (opts:get-opts)
         (opts:missing-arg (condition)
-          (format t "fatal: option ~s needs an argument!~%"
+          (format t "fatal: option ~s needs an argument!"
                   (opts:option condition))
           (opts:exit 1))
         (opts:arg-parser-failed (condition)
-          (format t "fatal: cannot parse ~s as argument of ~s~%"
+          (format t "fatal: cannot parse ~s as argument of ~s"
                   (opts:raw-arg condition)
                   (opts:option condition))
           (opts:exit 1))
         (opts:missing-required-option (con)
-          (format t "fatal: ~a~%" con)
+          (format t "fatal: ~a" con)
+          (opts:exit 1))
+        (opts:unknown-option (con)
+          (format t "fatal: ~A" con)
           (opts:exit 1)))
     (declare (ignorable free-args))
 
     (when-option (options :help)
-      (unix-opts:describe :prefix "repost tweets from twitter to mastodon"
-                          :usage-of "tworp")
+      (opts:describe :prefix "repost tweets from twitter to mastodon"
+                     :usage-of "tworp")
+      (opts:exit 0))
+
+    (when-option (options :version)
+      (format t "tworp v~A" 
+                #.(asdf:component-version (asdf:find-system :tworp)))
       (opts:exit 0))
     
     (handler-case
@@ -100,6 +111,6 @@
                (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t)
                  (mapcar #'post-to-mastodon (new-tweets)))))
       (user-abort ()
-        (unix-opts:exit 0))
+        (opts:exit 0))
       (error (e)
-        (format t "encountered uncrecoverable error: ~A~%" e)))))
+        (format t "encountered uncrecoverable error: ~A" e)))))
