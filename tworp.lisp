@@ -32,7 +32,7 @@
        ,@body)))
 
 (defun new-tweets ()
-  (let ((tweets (chirp:statuses/user-timeline :screen-name (conf:config :twitter-user) :since-id *last-id*)))
+  (let ((tweets (chirp:statuses/user-timeline :screen-name (conf:config :twitter-user) :since-id *last-id* :tweet-mode "extended")))
     (when tweets
       (setf *last-id* (chirp:id (first tweets)))
       (write-last-id))
@@ -46,7 +46,7 @@
 
 (defun post-to-mastodon (tweet)
   (when tweet
-    (glacier:post (ppcre:regex-replace-all "@(\\w*)" (chirp:text tweet) "@\\1@twitter.com")
+    (glacier:post (ppcre:regex-replace-all "@(\\w*)" (chirp:xml-decode (chirp:full-text tweet)) "@\\1@twitter.com")
                   :cw (conf:config :content-warning "twitter crosspost")
                   :visibility (conf:config :visibility :unlisted)
                   :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet)))))))
