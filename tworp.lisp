@@ -116,7 +116,7 @@
                    (setf chirp:*oauth-api-key* (conf:config :twitter-api-key)
                          chirp:*oauth-api-secret* (conf:config :twitter-api-secret)))
                  (ensure-directories-exist #P"./media/")
-                 (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t)
+                 (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t :async t)
                    (append! *tweet-buffer* (new-tweets)))
                  (glacier:after-every ((conf:config :timeout 1) :minutes)
                    (post-to-mastodon (pop *tweet-buffer*)))))
