@@ -9,6 +9,7 @@
 (declaim (inline post-to-mastodon generate-link))
 
 (defvar *last-id* nil)
+(defvar *tweet-buffer* nil)
 
 (opts:define-opts
   (:name :help
@@ -30,7 +31,6 @@
           (chirp:screen-name (chirp:user tweet))
           (chirp:id tweet)))
           
-
 (defun new-tweets ()
   (let ((tweets (chirp:statuses/user-timeline :screen-name (conf:config :twitter-user) :since-id *last-id* :tweet-mode "extended")))
     (when tweets
@@ -50,8 +50,7 @@
      (glacier:post (format nil "~A~%~%Source: ~A" text (generate-link tweet))
                    :cw (conf:config :content-warning "twitter crosspost")
                    :visibility (conf:config :visibility :unlisted)
-                   :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet)))))
-     (sleep (glacier::parse-time (conf:config :timeout 1) :minutes)))))
+                   :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet))))))))
 
 (defun download-tweet-media (media)
   (when media
@@ -72,7 +71,9 @@
               `(let ((it (getf ,options ,opt)))
                  (declare (ignorable it))
                  (when it
-                   ,@body))))
+                   ,@body)))
+             (append! (place &rest lists)
+               `(setf ,place (append place ,@lists))))
     (when (uiop:file-exists-p "last.id")
       (with-open-file (in "last.id")
         (setf *last-id* (read-line in))))
@@ -116,7 +117,9 @@
                          chirp:*oauth-api-secret* (conf:config :twitter-api-secret)))
                  (ensure-directories-exist #P"./media/")
                  (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t)
-                   (mapcar #'post-to-mastodon (new-tweets)))))
+                   (append! *tweet-buffer* (new-tweets)))
+                 (glacier:after-every ((conf:config :timeout 1) :minutes)
+                   (post-to-mastodon (pop *tweet-buffer*)))))
         (user-abort ()
           (opts:exit 0))
         (error (e)
