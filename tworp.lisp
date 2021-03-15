@@ -50,7 +50,8 @@
      (glacier:post (format nil "~A~%~%Source: ~A" text (generate-link tweet))
                    :cw (conf:config :content-warning "twitter crosspost")
                    :visibility (conf:config :visibility :unlisted)
-                   :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet))))))))
+                   :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet)))))
+     (sleep (glacier::parse-time (conf:config :timeout 1) :minutes)))))
 
 (defun download-tweet-media (media)
   (when media
