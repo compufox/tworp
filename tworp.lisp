@@ -73,7 +73,7 @@
                  (when it
                    ,@body)))
              (append! (place &rest lists)
-               `(setf ,place (append place ,@lists))))
+               `(setf ,place (append ,place ,@lists))))
     (when (uiop:file-exists-p "last.id")
       (with-open-file (in "last.id")
         (setf *last-id* (read-line in))))
