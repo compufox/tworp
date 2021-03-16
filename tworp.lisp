@@ -88,8 +88,8 @@
                  (declare (ignorable it))
                  (when it
                    ,@body)))
-             (append! (place &rest lists)
-               `(setf ,place (append ,place ,@lists))))
+             (in-place (place fn &rest args)
+               `(setf ,place (funcall ,fn ,place ,@args))))
     ;; when a "last.id" file exists load the contents
     ;;  (last.id file only contains the ID of the last
     ;;   tweet we saw. this allows for persistency
@@ -151,7 +151,8 @@
                  ;; in a separate thread fetch new tweets as dictated by our interval 
                  ;;  set up in the config
                  (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t :async t)
-                   (append! *tweet-buffer* (new-tweets)))
+                   (in-place *tweet-buffer* #'remove-duplicates
+                             (in-place *tweet-buffer* #'append (new-tweets)) :key #'chirp:id))
 
                  ;; post to mastodon after each timeout, as dictated by our config
                  (glacier:after-every ((conf:config :timeout 1) :minutes)
