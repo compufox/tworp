@@ -58,18 +58,27 @@
           :do (setf uniq (remove rt uniq :key #'chirp:id))
           :finally (return uniq))))
 
+(defun build-media-list (media)
+  (if (conf:config :media-description)
+      (loop :for m :in media
+            :collect (list m (conf:config :media-description)))
+   media))
+
 (defun post-to-mastodon (tweet)
   "posts TWEET to mastodon"
   (when tweet
     ;; the regex-replace-all turns all twitter @mentions into @mention@twitter.com
     ;;  this is to avoid name collision with anyone on masto
-    (glacier:post (format nil "~A~%~%Source: ~A"
-                          (ppcre:regex-replace-all "@(\\w*)" (chirp:xml-decode (chirp:full-text tweet))
-                                                   "@\\1@twitter.com")
-                          (generate-link tweet))
-                  :cw (conf:config :content-warning "twitter crosspost")
-                  :visibility (conf:config :visibility :unlisted)
-                  :media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet)))))
+    (let ((media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet))))))
+      (glacier:post (format nil "~A~%~%Source: ~A"
+                            (ppcre:regex-replace-all "@(\\w*)" (chirp:xml-decode (chirp:full-text tweet))
+                                                     "@\\1@twitter.com")
+                            (generate-link tweet))
+                    :cw (when (conf:config :enable-cw)
+                          (conf:config :content-warning "twitter crosspost"))
+                    :visibility (conf:config :visibility :unlisted)
+                    :sensitive (or (conf:config :enable-cw) (conf:config :sensitive-media))
+                    :media (build-media-list media)))
     ;; once we post the tweet, we cache the ID so we dont post it again
     (cache-id tweet)))
 

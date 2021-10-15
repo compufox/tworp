@@ -12,6 +12,9 @@ interval = 10
 # DEFAULT = 1
 timeout = 10
 
+# toggle whether or not to post to mastodon with a content warning
+enable-cw = true
+
 # a content warning to put on all mastodon posts
 # DEFAULT = twitter crosspost
 content-warning = twitter crosspost
@@ -20,6 +23,12 @@ content-warning = twitter crosspost
 # VALUES  = :public :unlisted :private :direct
 # DEFAULT = :unlisted
 visibility = :unlisted
+
+# toggle whether to mark media as sensitive or not
+sensitive-media = true
+
+# a description to put on the images uploaded
+media-description = this is an image
 
 ## Unneeded if you are using a release from github
 # twitter-api-key = blablablahYourKey
