@@ -168,7 +168,7 @@
                  ;;  set up in the config
                  (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t :async t)
                    (setf *tweet-buffer*
-                         (remove-duplicate-tweets (append *tweet-buffer* (new-tweets)))))
+                         (remove-duplicate-tweets (append *tweet-buffer* (reverse (new-tweets))))))
 
                  ;; post to mastodon after each timeout, as dictated by our config
                  (glacier:after-every ((conf:config :timeout 1) :minutes)
