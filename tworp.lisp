@@ -50,12 +50,12 @@
     (princ *last-id* out)))
 
 (defun remove-duplicate-tweets (tweets)
-  (let ((uniq (remove-duplicates tweets :key #'chirp:id))
+  (let ((uniq (remove-duplicates tweets :key #'chirp:id :from-end t))
         (rts (loop :for tw :in tweets
                    :when (chirp:retweet-p tw)
                      :collect (chirp:retweeted-status tw))))
     (loop :for rt :in rts
-          :do (setf uniq (remove rt uniq :key #'chirp:id))
+          :do (setf uniq (remove rt uniq :key #'chirp:id :from-end t))
           :finally (return uniq))))
 
 (defun build-media-list (media)
@@ -105,10 +105,7 @@
               `(let ((it (getf ,options ,opt)))
                  (declare (ignorable it))
                  (when it
-                   ,@body)))
-             (pop-last (lst)
-               `(prog1 (car (last ,lst))
-                  (setf ,lst (subseq ,lst 0 (1- (length ,lst)))))))
+                   ,@body))))
     ;; when a "last.id" file exists load the contents
     ;;  (last.id file only contains the ID of the last
     ;;   tweet we saw. this allows for persistency
@@ -171,11 +168,11 @@
                  ;;  set up in the config
                  (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t :async t)
                    (setf *tweet-buffer*
-                         (remove-duplicate-tweets (append (new-tweets) *tweet-buffer*))))
+                         (remove-duplicate-tweets (append *tweet-buffer* (new-tweets)))))
 
                  ;; post to mastodon after each timeout, as dictated by our config
                  (glacier:after-every ((conf:config :timeout 1) :minutes)
-                   (post-to-mastodon (pop-last *tweet-buffer*)))))
+                   (post-to-mastodon (pop *tweet-buffer*)))))
 
         ;; if a user stops us, exit gracefully
         (user-abort ()
