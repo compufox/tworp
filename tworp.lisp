@@ -33,21 +33,24 @@
           (chirp:screen-name (chirp:user tweet))
           (chirp:id tweet)))
           
-(defun new-tweets ()
+(defun fetch-new-tweets ()
   "fetches new tweets that have appeared since *last-id*"
   (chirp:statuses/user-timeline :screen-name (conf:config :twitter-user) :since-id *last-id* :tweet-mode "extended"))
 
 (defun cache-id (tweet)
   "cache and save ID for TWEET"
   (setf *last-id* (chirp:id tweet))
-  (write-last-id))
-
-(defun write-last-id ()
-  "saves *last-id* to a last.id file"
   (with-open-file (out "last.id" :direction :output
                                  :if-does-not-exist :create
                                  :if-exists :supersede)
     (princ *last-id* out)))
+  
+
+(defun write-tweet-ids (tweets)
+ (with-open-file (out "tweet.ids" :direction :output
+                                  :if-does-not-exist :create
+                                  :if-exists :supersede)
+  (format out "~{~A~}" (mapcar #'chirp:id tweets))))
 
 (defun remove-duplicate-tweets (tweets)
   (let ((uniq (remove-duplicates tweets :key #'chirp:id :from-end t))
@@ -166,9 +169,12 @@
 
                  ;; in a separate thread fetch new tweets as dictated by our interval 
                  ;;  set up in the config
-                 (glacier:after-every ((conf:config :interval 5) :minutes :run-immediately t :async t)
-                   (setf *tweet-buffer*
-                         (remove-duplicate-tweets (append *tweet-buffer* (reverse (new-tweets))))))
+                 (bt:make-thread #'(lambda ()
+                                     (chirp:map-timeline :user #'(lambda (status) (setf *tweet-buffer*
+                                                                                        (append *tweet-buffer* (list status))))
+                                                         :screen-name (conf:config :twitter-user) :tweet-mode "extended"
+                                                         :since-id *last-id*
+                                                         :cooldown (* (conf:config :interval 5) 60))))
 
                  ;; post to mastodon after each timeout, as dictated by our config
                  (glacier:after-every ((conf:config :timeout 1) :minutes)
