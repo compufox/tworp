@@ -6,7 +6,9 @@
   :license  "NPLv1+"
   :version "0.1.3"
   :serial t
-  :depends-on (#:glacier #:chirp #:simple-config #:with-user-abort #:unix-opts #:cl-ppcre)
+  :depends-on (#:glacier #:chirp #:simple-config
+               #:with-user-abort #:unix-opts #:cl-ppcre
+               #:bordeaux-threads)
   :components ((:file "tworp"))
   :entry-point "tworp:main"
   :build-operation "program-op"

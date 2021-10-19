@@ -25,9 +25,10 @@ content-warning = twitter crosspost
 visibility = :unlisted
 
 # toggle whether to mark media as sensitive or not
+# NOTE: if enable-cw is enabled, this is enabled as well
 sensitive-media = true
 
-# a description to put on the images uploaded
+# a description to apply to any crossposted images
 media-description = this is an image
 
 ## Unneeded if you are using a release from github

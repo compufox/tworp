@@ -6,8 +6,7 @@
 
 (in-package #:tworp)
 
-(declaim (inline post-to-mastodon generate-link write-last-id
-                 new-tweets cache-id))
+(declaim (inline generate-link cache-id build-media-list))
 
 (defvar *last-id* nil)
 (defvar *tweet-buffer* nil)
@@ -32,10 +31,6 @@
   (format nil "https://twitter.com/~A/status/~A"
           (chirp:screen-name (chirp:user tweet))
           (chirp:id tweet)))
-          
-(defun fetch-new-tweets ()
-  "fetches new tweets that have appeared since *last-id*"
-  (chirp:statuses/user-timeline :screen-name (conf:config :twitter-user) :since-id *last-id* :tweet-mode "extended"))
 
 (defun cache-id (tweet)
   "cache and save ID for TWEET"
@@ -44,24 +39,9 @@
                                  :if-does-not-exist :create
                                  :if-exists :supersede)
     (princ *last-id* out)))
-  
-
-(defun write-tweet-ids (tweets)
- (with-open-file (out "tweet.ids" :direction :output
-                                  :if-does-not-exist :create
-                                  :if-exists :supersede)
-  (format out "~{~A~}" (mapcar #'chirp:id tweets))))
-
-(defun remove-duplicate-tweets (tweets)
-  (let ((uniq (remove-duplicates tweets :key #'chirp:id :from-end t))
-        (rts (loop :for tw :in tweets
-                   :when (chirp:retweet-p tw)
-                     :collect (chirp:retweeted-status tw))))
-    (loop :for rt :in rts
-          :do (setf uniq (remove rt uniq :key #'chirp:id :from-end t))
-          :finally (return uniq))))
 
 (defun build-media-list (media)
+  "applies media descriptions to the uploaded media in a format that glacier knows how to handle"
   (if (conf:config :media-description)
       (loop :for m :in media
             :collect (list m (conf:config :media-description)))
