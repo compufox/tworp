@@ -4,7 +4,7 @@
   :description "mastodon bot that mirrors a twitter account"
   :author "ava fox"
   :license  "NPLv1+"
-  :version "0.1.3"
+  :version "0.2"
   :serial t
   :depends-on (#:glacier #:chirp #:simple-config
                #:with-user-abort #:unix-opts #:cl-ppcre
