@@ -10,6 +10,8 @@
 
 (defvar *last-id* nil)
 (defvar *tweet-buffer* nil)
+(defvar *media-dir* nil)
+(defvar *id-file* nil)
 
 (opts:define-opts
   (:name :help
@@ -35,7 +37,7 @@
 (defun cache-id (tweet)
   "cache and save ID for TWEET"
   (setf *last-id* (chirp:id tweet))
-  (with-open-file (out "last.id" :direction :output
+  (with-open-file (out *id-file* :direction :output
                                  :if-does-not-exist :create
                                  :if-exists :supersede)
     (princ *last-id* out)))
@@ -69,7 +71,7 @@
   "downloads MEDIA and saves it to the filesystem for crossposting"
   (when media
     (let* ((url (chirp:media-url-https media))
-           (filename (concatenate 'string "media/" (pathname-name url) "." (pathname-type url))))
+           (filename (concatenate 'string *media-dir* (pathname-name url) "." (pathname-type url))))
       (with-open-file (out filename :direction :output
                                     :if-does-not-exist :create
                                     :if-exists :supersede
@@ -89,12 +91,15 @@
                  (declare (ignorable it))
                  (when it
                    ,@body))))
+    (setf *id-file* (concatenate 'string (conf:config :twitter-user) ".id")
+          *media-dir* (concatenate 'string "./" (conf:config :twitter-user) "-media/"))
+    
     ;; when a "last.id" file exists load the contents
     ;;  (last.id file only contains the ID of the last
     ;;   tweet we saw. this allows for persistency
     ;;   across reboots of the application)
-    (when (uiop:file-exists-p "last.id")
-      (with-open-file (in "last.id")
+    (when (uiop:file-exists-p *id-file*)
+      (with-open-file (in *id-file*)
         (setf *last-id* (read-line in))))
 
     ;; parse all of the options we got passed 
@@ -145,7 +150,7 @@
                          chirp:*oauth-api-secret* (conf:config :twitter-api-secret)))
 
                  ;; make sure our media directory exists
-                 (ensure-directories-exist #P"./media/")
+                 (ensure-directories-exist (pathname *media-dir*))
 
                  ;; in a separate thread fetch new tweets as dictated by our interval 
                  ;;  set up in the config
