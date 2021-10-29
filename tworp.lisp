@@ -101,19 +101,19 @@
     (multiple-value-bind (options free-args)
         (handler-case (opts:get-opts)
           (opts:missing-arg (condition)
-            (format t "fatal: option ~s needs an argument!"
+            (format t "fatal: option ~s needs an argument!~&"
                     (opts:option condition))
             (opts:exit 1))
           (opts:arg-parser-failed (condition)
-            (format t "fatal: cannot parse ~s as argument of ~s"
+            (format t "fatal: cannot parse ~s as argument of ~s~&"
                     (opts:raw-arg condition)
                     (opts:option condition))
             (opts:exit 1))
           (opts:missing-required-option (con)
-            (format t "fatal: ~a" con)
+            (format t "fatal: ~a~&" con)
             (opts:exit 1))
           (opts:unknown-option (con)
-            (format t "fatal: ~A" con)
+            (format t "fatal: ~A~&" con)
             (opts:exit 1)))
       (declare (ignorable free-args))
 
@@ -125,7 +125,7 @@
 
       ;; when the user passed --version
       (when-option (options :version)
-        (format t "tworp v~A" 
+        (format t "tworp v~A~&" 
                 ;; the #. allows this value to be calculated at compile time
                 ;;  instead of run time (making this WAY faster lmao)
                 #.(asdf:component-version (asdf:find-system :tworp)))
@@ -166,4 +166,4 @@
 
         ;; if we hit an issue, tell the user and exit gracefully
         (error (e)
-          (format t "encountered uncrecoverable error: ~A" e))))))
+          (format t "encountered uncrecoverable error: ~A~&" e))))))
