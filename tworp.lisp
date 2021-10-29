@@ -8,7 +8,6 @@
 
 (declaim (inline generate-link cache-id build-media-list))
 
-(defvar *last-id* nil)
 (defvar *tweet-buffer* nil)
 (defvar *media-dir* nil)
 (defvar *id-file* nil)
@@ -36,11 +35,10 @@
 
 (defun cache-id (tweet)
   "cache and save ID for TWEET"
-  (setf *last-id* (chirp:id tweet))
   (with-open-file (out *id-file* :direction :output
                                  :if-does-not-exist :create
                                  :if-exists :supersede)
-    (princ *last-id* out)))
+    (princ (chirp:id tweet) out)))
 
 (defun build-media-list (media)
   "applies media descriptions to the uploaded media in a format that glacier knows how to handle"
@@ -93,14 +91,6 @@
                    ,@body))))
     (setf *id-file* (concatenate 'string (conf:config :twitter-user) ".id")
           *media-dir* (concatenate 'string "./" (conf:config :twitter-user) "-media/"))
-    
-    ;; when a "last.id" file exists load the contents
-    ;;  (last.id file only contains the ID of the last
-    ;;   tweet we saw. this allows for persistency
-    ;;   across reboots of the application)
-    (when (uiop:file-exists-p *id-file*)
-      (with-open-file (in *id-file*)
-        (setf *last-id* (read-line in))))
 
     ;; parse all of the options we got passed 
     (multiple-value-bind (options free-args)
@@ -158,8 +148,10 @@
                                      (chirp:map-timeline :user #'(lambda (status) (setf *tweet-buffer*
                                                                                         (append *tweet-buffer* (list status))))
                                                          :screen-name (conf:config :twitter-user) :tweet-mode "extended"
-                                                         :since-id *last-id*
-                                                         :cooldown (* (conf:config :interval 5) 60))))
+                                                         :since-id (when (uiop:file-exists-p *id-file*)
+                                                                     (with-open-file (in *id-file*)
+                                                                       (read-line in)))
+                                      :cooldown (* (conf:config :interval 5) 60))))
 
                  ;; post to mastodon after each timeout, as dictated by our config
                  (glacier:after-every ((conf:config :timeout 1) :minutes)
