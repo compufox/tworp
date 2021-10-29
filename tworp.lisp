@@ -89,8 +89,6 @@
                  (declare (ignorable it))
                  (when it
                    ,@body))))
-    (setf *id-file* (concatenate 'string (conf:config :twitter-user) ".id")
-          *media-dir* (concatenate 'string "./" (conf:config :twitter-user) "-media/"))
 
     ;; parse all of the options we got passed 
     (multiple-value-bind (options free-args)
@@ -131,31 +129,35 @@
           (with-user-abort
                (glacier:run-bot ((make-instance 'glacier:mastodon-bot :config-file
                                                 (getf options :config-file))
-                                 :with-websocket nil)
-                 
-                 ;; if we dont have our twitter api keys set then we load them from our config
-                 ;;  (these get populated by the dev on a release build)
-                 (unless (or chirp:*oauth-api-key* chirp:*oauth-api-secret*)
-                   (setf chirp:*oauth-api-key* (conf:config :twitter-api-key)
-                         chirp:*oauth-api-secret* (conf:config :twitter-api-secret)))
+                                 :with-websocket nil)               
+
+                ;; sets our variables once we have our config loaded
+                (setf *id-file* (concatenate 'string (conf:config :twitter-user) ".id")
+                      *media-dir* (concatenate 'string "./" (conf:config :twitter-user) "-media/"))
+                                
+                ;; if we dont have our twitter api keys set then we load them from our config
+                ;;  (these get populated by the dev on a release build)
+                (unless (or chirp:*oauth-api-key* chirp:*oauth-api-secret*)
+                  (setf chirp:*oauth-api-key* (conf:config :twitter-api-key)
+                        chirp:*oauth-api-secret* (conf:config :twitter-api-secret)))
 
                  ;; make sure our media directory exists
-                 (ensure-directories-exist (pathname *media-dir*))
+                (ensure-directories-exist (pathname *media-dir*))
 
                  ;; in a separate thread fetch new tweets as dictated by our interval 
                  ;;  set up in the config
-                 (bt:make-thread #'(lambda ()
-                                     (chirp:map-timeline :user #'(lambda (status) (setf *tweet-buffer*
-                                                                                        (append *tweet-buffer* (list status))))
-                                                         :screen-name (conf:config :twitter-user) :tweet-mode "extended"
-                                                         :since-id (when (uiop:file-exists-p *id-file*)
-                                                                     (with-open-file (in *id-file*)
-                                                                       (read-line in)))
-                                      :cooldown (* (conf:config :interval 5) 60))))
+                (bt:make-thread #'(lambda ()
+                                    (chirp:map-timeline :user #'(lambda (status) (setf *tweet-buffer*
+                                                                                       (append *tweet-buffer* (list status))))
+                                                        :screen-name (conf:config :twitter-user) :tweet-mode "extended"
+                                                        :since-id (when (uiop:file-exists-p *id-file*)
+                                                                    (with-open-file (in *id-file*)
+                                                                      (read-line in)))
+                                     :cooldown (* (conf:config :interval 5) 60))))
 
                  ;; post to mastodon after each timeout, as dictated by our config
-                 (glacier:after-every ((conf:config :timeout 1) :minutes)
-                   (post-to-mastodon (pop *tweet-buffer*)))))
+                (glacier:after-every ((conf:config :timeout 1) :minutes)
+                  (post-to-mastodon (pop *tweet-buffer*)))))
 
         ;; if a user stops us, exit gracefully
         (user-abort ()
