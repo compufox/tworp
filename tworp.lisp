@@ -150,10 +150,12 @@
                                     (chirp:map-timeline :user #'(lambda (status) (setf *tweet-buffer*
                                                                                        (append *tweet-buffer* (list status))))
                                                         :screen-name (conf:config :twitter-user) :tweet-mode "extended"
+                                                        
                                                         :since-id (when (uiop:file-exists-p *id-file*)
                                                                     (with-open-file (in *id-file*)
                                                                       (read-line in)))
-                                     :cooldown (* (conf:config :interval 10) 60))))
+                                                        :exclude-replies (not (conf:config :include-replies))
+                                                        :cooldown (* (conf:config :interval 10) 60))))
 
                  ;; post to mastodon after each timeout, as dictated by our config
                 (glacier:after-every ((conf:config :timeout 5) :minutes)

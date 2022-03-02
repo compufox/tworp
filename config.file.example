@@ -4,6 +4,10 @@ mastodon-token = blahblahblah
 # the handle of the twitter user to crosspost
 twitter-user = example_user
 
+# if we should include replies the account makes or not
+# DEFAULT = false
+include-replies = true
+
 # how long to wait before trying to get new tweets (in minutes)
 # DEFAULT = 10
 interval = 10
