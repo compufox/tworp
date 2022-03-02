@@ -5,11 +5,11 @@ mastodon-token = blahblahblah
 twitter-user = example_user
 
 # how long to wait before trying to get new tweets (in minutes)
-# DEFAULT = 5
+# DEFAULT = 10
 interval = 10
 
 # how long to wait in between posting to mastodon (in minutes)
-# DEFAULT = 1
+# DEFAULT = 5
 timeout = 10
 
 # toggle whether or not to post to mastodon with a content warning

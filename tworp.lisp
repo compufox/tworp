@@ -153,10 +153,10 @@
                                                         :since-id (when (uiop:file-exists-p *id-file*)
                                                                     (with-open-file (in *id-file*)
                                                                       (read-line in)))
-                                     :cooldown (* (conf:config :interval 5) 60))))
+                                     :cooldown (* (conf:config :interval 10) 60))))
 
                  ;; post to mastodon after each timeout, as dictated by our config
-                (glacier:after-every ((conf:config :timeout 1) :minutes)
+                (glacier:after-every ((conf:config :timeout 5) :minutes)
                   (post-to-mastodon (pop *tweet-buffer*)))))
 
         ;; if a user stops us, exit gracefully
