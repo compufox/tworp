@@ -6,7 +6,8 @@
 
 (in-package #:tworp)
 
-(declaim (inline generate-link cache-id build-media-list))
+(declaim (inline generate-link cache-id build-media-list
+                 agetf has-mentions-p self-reply-p))
 
 (defvar *tweet-buffer* nil)
 (defvar *media-dir* nil)
@@ -47,23 +48,48 @@
             :collect (list m (conf:config :media-description)))
    media))
 
+(defun agetf (place indicator &optional default)
+  (or (cdr (assoc indicator place))
+      default))
+
+(defun has-mentions-p (tweet)
+  (agetf (chirp:entities tweet) :user-mentions))
+
+(defun self-reply-p (tweet)
+  (let ((screenname (agetf (chirp:in-reply-to tweet) :screen-name)))
+    (string= (conf:config :twitter-user) screenname)))
+
 (defun post-to-mastodon (tweet)
   "posts TWEET to mastodon"
-  (when tweet
-    ;; the regex-replace-all turns all twitter @mentions into @mention@twitter.com
-    ;;  this is to avoid name collision with anyone on masto
-    (let ((media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet))))))
-      (glacier:post (format nil "~A~%~%Source: ~A"
-                            (ppcre:regex-replace-all "@(\\w*)" (chirp:xml-decode (chirp:full-text tweet))
-                                                     "@\\1@twitter.com")
-                            (generate-link tweet))
-                    :cw (when (conf:config :enable-cw)
-                          (conf:config :content-warning "twitter crosspost"))
-                    :visibility (conf:config :visibility :unlisted)
-                    :sensitive (or (conf:config :enable-cw) (conf:config :sensitive-media))
-                    :media (build-media-list media)))
-    ;; once we post the tweet, we cache the ID so we dont post it again
-    (cache-id tweet)))
+
+  ;; when we have a tweet
+  ;; and
+  ;;  it has mentions, isn't a self-reply, and we are including replies
+  ;; or
+  ;;  it IS a self-reply, doesn't have any mentions, and we're not including other replies
+  ;; or
+  ;;  it isnt a reply, and has no mentions (meaning its a tweet that stands on it's own)
+  (let ((self-reply (self-reply-p tweet))
+        (has-mentions (has-mentions-p tweet))
+        (include-replies (conf:config :include-replies)))
+    (when (and tweet
+               (or (and has-mentions (not self-reply) include-replies)
+                   (and self-reply (not has-mentions) (not include-replies))
+                   (and (not self-reply) (not has-mentions))))
+      ;; the regex-replace-all turns all twitter @mentions into @mention@twitter.com
+      ;;  this is to avoid name collision with anyone on masto
+      (let ((media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet))))))
+        (glacier:post (format nil "~A~%~%Source: ~A"
+                              (ppcre:regex-replace-all "@(\\w*)" (chirp:xml-decode (chirp:full-text tweet))
+                                                       "@\\1@twitter.com")
+                              (generate-link tweet))
+                      :cw (when (conf:config :enable-cw)
+                            (conf:config :content-warning "twitter crosspost"))
+                      :visibility (conf:config :visibility :unlisted)
+                      :sensitive (or (conf:config :enable-cw) (conf:config :sensitive-media))
+                      :media (build-media-list media))
+              ;; once we post the tweet, we cache the ID so we dont post it again
+        (cache-id tweet)))))
 
 (defun download-tweet-media (media)
   "downloads MEDIA and saves it to the filesystem for crossposting"
@@ -154,7 +180,6 @@
                                                         :since-id (when (uiop:file-exists-p *id-file*)
                                                                     (with-open-file (in *id-file*)
                                                                       (read-line in)))
-                                                        :exclude-replies (not (conf:config :include-replies))
                                                         :cooldown (* (conf:config :interval 10) 60))))
 
                  ;; post to mastodon after each timeout, as dictated by our config
