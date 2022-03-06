@@ -63,8 +63,8 @@
   (agetf (chirp:entities tweet) :user-mentions))
 
 (defun self-reply-p (tweet)
-  (let ((screenname (agetf (chirp:in-reply-to tweet) :screen-name)))
-    (string= (conf:config :twitter-user) screenname)))
+  (and (string= (conf:config :twitter-user) (agetf (chirp:in-reply-to tweet) :screen-name))
+       (string= (conf:config :twitter-user) (chirp:screen-name (chirp:user tweet)))))
 
 (defun post-to-mastodon (tweet)
   "posts TWEET to mastodon"
