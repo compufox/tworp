@@ -52,6 +52,10 @@
   (or (cdr (assoc indicator place))
       default))
 
+(defun reply-p (tweet)
+  (and (has-mentions-p tweet)
+       (not (self-reply-p tweet))))
+
 (defun has-mentions-p (tweet)
   (agetf (chirp:entities tweet) :user-mentions))
 
@@ -63,22 +67,14 @@
   "posts TWEET to mastodon"
 
   ;; when we have a tweet
-  ;; and
-  ;;  it has mentions, isn't a self-reply, and we are including replies
-  ;; or
-  ;;  it IS a self-reply, doesn't have any mentions, and we're not including other replies
-  ;; or
-  ;;  it isnt a reply, and has no mentions (meaning its a tweet that stands on it's own)
-  (let ((self-reply (self-reply-p tweet))
-        (has-mentions (has-mentions-p tweet))
-        (include-replies (conf:config :include-replies)))
-    (when (and tweet
-               (or (and has-mentions (not self-reply) include-replies)
-                   (and self-reply (not has-mentions) (not include-replies))
-                   (and (not self-reply) (not has-mentions))))
+  ;; and its a reply and we are allowing replies
+  ;; or its not a reply at all
+  (when (and tweet
+             (or (not (reply-p tweet))
+                 (conf:config :include-replies)))
       ;; the regex-replace-all turns all twitter @mentions into @mention@twitter.com
       ;;  this is to avoid name collision with anyone on masto
-      (let ((media (mapcar #'download-tweet-media (cdr (assoc :media (chirp:entities tweet))))))
+      (let ((media (mapcar #'download-tweet-media (agetf (chirp:entities tweet) :media))))
         (glacier:post (format nil "~A~%~%Source: ~A"
                               (ppcre:regex-replace-all "@(\\w*)" (chirp:xml-decode (chirp:full-text tweet))
                                                        "@\\1@twitter.com")
@@ -89,7 +85,7 @@
                       :sensitive (or (conf:config :enable-cw) (conf:config :sensitive-media))
                       :media (build-media-list media))
               ;; once we post the tweet, we cache the ID so we dont post it again
-        (cache-id tweet)))))
+        (cache-id tweet))))
 
 (defun download-tweet-media (media)
   "downloads MEDIA and saves it to the filesystem for crossposting"
