@@ -35,6 +35,13 @@ sensitive-media = true
 # a description to apply to any crossposted images
 media-description = this is an image
 
+# if this option is enabled then the "source" link will be generated
+#  using the vlaue in nitter-domain instead of "twitter.com"
+# DEFAULTS = false
+#            nitter.eu
+nitterize-links = false
+nitter-domain = nitter.eu
+
 ## Unneeded if you are using a release from github
 # twitter-api-key = blablablahYourKey
 # twitter-api-secret = blahblahblahYourSecret

@@ -7,7 +7,7 @@
 (in-package #:tworp)
 
 (declaim (inline generate-link cache-id build-media-list
-                 agetf has-mentions-p self-reply-p))
+                 agetf has-mentions-p self-reply-p reply-p))
 
 (defvar *tweet-buffer* nil)
 (defvar *media-dir* nil)
@@ -30,7 +30,10 @@
 
 (defun generate-link (tweet)
   "generates a twitter link to TWEET"
-  (format nil "https://twitter.com/~A/status/~A"
+  (format nil "https://~A/~A/status/~A"
+          (if (conf:config :nitterize-links)
+              (conf:config :nitter-domain "nitter.eu")
+              "twitter.com")
           (chirp:screen-name (chirp:user tweet))
           (chirp:id tweet)))
 
