@@ -78,10 +78,11 @@
       ;; the regex-replace-all turns all twitter @mentions into @mention@twitter.com
       ;;  this is to avoid name collision with anyone on masto
       (let ((media (mapcar #'download-tweet-media (agetf (chirp:entities tweet) :media))))
-        (glacier:post (format nil "~A~%~%Source: ~A"
+        (glacier:post (format nil "~A~%~%Source: ~A~%~A"
                               (ppcre:regex-replace-all "@(\\w*)" (chirp:xml-decode (chirp:full-text tweet))
                                                        "@\\1@twitter.com")
-                              (generate-link tweet))
+                              (generate-link tweet)
+                              (conf:config :custom-message ""))
                       :cw (when (conf:config :enable-cw)
                             (conf:config :content-warning "twitter crosspost"))
                       :visibility (conf:config :visibility :unlisted)

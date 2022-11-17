@@ -35,6 +35,11 @@ sensitive-media = true
 # a description to apply to any crossposted images
 media-description = this is an image
 
+# a custom message that will be appended to the
+#  end of a status crossposted to mastodon
+# DEFAULT = blank
+custom-message = 👁️
+
 # if this option is enabled then the "source" link will be generated
 #  using the vlaue in nitter-domain instead of "twitter.com"
 # DEFAULTS = false
